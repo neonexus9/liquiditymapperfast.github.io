@@ -38,5 +38,5 @@ export class SqliteLiquidationStore implements LiquidationStore {
 
 /** Liquidations across the venues that publish them, persisted in SQLite (`dbPath`) or kept in memory when there is none. */
 export class LiquidationStream extends LiquidationCore {
-  constructor(dbPath: string | null = null, now: () => number = Date.now) { super(dbPath ? new SqliteLiquidationStore(dbPath) : null, now); }
+  constructor(dbPath: string | null = null, now: () => number = Date.now, retentionMs?: number, floorUsd?: number) { super(dbPath ? new SqliteLiquidationStore(dbPath) : null, now, retentionMs, floorUsd); }
 }
