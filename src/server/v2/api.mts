@@ -21,7 +21,7 @@ import { ExtraVenues, RECOMMENDED_EXTRA_VENUES } from './venues.mts';
 import { connectorFactories } from './connectors.mts';
 import { BTC, type Coin } from '../../shared/coins.ts';
 import { browserVenues } from '../../shared/venues.ts';
-import { coinScale } from './server-coin.mts';
+import { coinScale, coinServers } from './server-coin.mts';
 import { MIN_BIN_USD, RETENTION_MS } from '../../shared/recorder.ts';
 import { CoinList } from './coin-list.mts';
 import { guardRequest, guardUpgrade } from '../request-guard.mts';
@@ -83,6 +83,7 @@ export function attachV2(app: App, { dataDir, liveMs = 250, persist = true, hear
   const recorder = new DepthRecorder({ store, minBinUsd: MIN_BIN_USD * scale });
   const defaults = process.env.HLM_DEFAULT_VENUES;
   // The coin list for the page's coin picker, rebuilt here daily (the server itself records one coin: `coin`).
+  const servers = coinServers();
   const coins = persist ? new CoinList(path.join(dataDir, 'coins.json'), path.join(process.cwd(), 'dist', 'coins.json')) : null;
   coins?.start();
   const extra = new ExtraVenues(persist ? path.join(dataDir, 'v2-venues.json') : null, connectorFactories(coin), !persist || defaults === 'configured' ? false : defaults === 'all' ? true : RECOMMENDED_EXTRA_VENUES);
@@ -431,6 +432,7 @@ export function attachV2(app: App, { dataDir, liveMs = 250, persist = true, hear
           case '/api/v2/absorption': absorptionRoute(url, res); return true;
           case '/api/v2/venues': venuesRoute(res); return true;
           case '/coins.json': return coins?.send(res) ?? false;
+          case '/api/v2/coin-servers': sendJson(res, servers); return true;
           default: return false;
         }
       } catch (error) {

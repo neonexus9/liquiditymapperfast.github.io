@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { applyServerCoin, markInstrumentIdFor, serverCoin } from '../src/server/v2/server-coin.mts';
+import { applyServerCoin, coinServers, markInstrumentIdFor, serverCoin } from '../src/server/v2/server-coin.mts';
 import { CONNECTOR_FACTORIES, connectorFactories } from '../src/server/v2/connectors.mts';
 import { BTC, type Coin } from '../src/shared/coins.ts';
 
@@ -57,4 +57,9 @@ test('connector venues follow the coin: BTC keeps every connector, another coin 
   assert.equal(connectorFactories(BTC), CONNECTOR_FACTORIES);
   const made = Object.fromEntries(Object.entries(connectorFactories(PUMP)).map(([id, make]) => [id, make().instrumentId]));
   assert.deepEqual(made, { binancespot: 'binancespot:PUMPUSDT', bybitspot: 'bybitspot:PUMPUSDT', okxspot: 'okxspot:PUMP-USDT' });
+});
+
+test('coinServers reads coin=port pairs and drops anything else', () => {
+  assert.deepEqual(coinServers('BTC=8787, sol=8789,ETH=x,=1,ZEC=70000'), { BTC: 8787, SOL: 8789 });
+  assert.deepEqual(coinServers(undefined), {});
 });

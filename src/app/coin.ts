@@ -93,6 +93,12 @@ export function requestedCoin(params: URLSearchParams): string {
  */
 export async function chooseCoin(params: URLSearchParams, now = Date.now()): Promise<CoinChoice> {
   const asked = requestedCoin(params);
+  // Another server records this coin: open the page there instead (nothing is built here; the page never settles).
+  const port = (await coinServerPorts())[asked];
+  if (port && String(port) !== (location.port || (location.protocol === 'https:' ? '443' : '80'))) {
+    location.replace(await coinAddress(asked));
+    return new Promise<CoinChoice>(() => {});
+  }
   let coin: Coin = BTC, notice: CoinChoice['notice'] = null;
   if (asked !== 'BTC') {
     const catalogue = await loadCatalogue(), found = catalogue.coins.find(c => c.coin === asked);
@@ -148,7 +154,20 @@ export function forCoin<S extends Pick<AppState, 'heatmapSource' | 'ladderVenue'
 export function switchCoin(coin: string): void {
   if (coin === chosen.coin.coin) return;
   writeJson(LAST_KEY, coin);
-  const url = new URL(location.href);
+  void coinAddress(coin).then(href => location.assign(href));
+}
+
+/** Each coin's recording server by port (`/api/v2/coin-servers`), read once; none when the server lists none or cannot be read. */
+let servers: Promise<Record<string, number>> | null = null;
+function coinServerPorts(): Promise<Record<string, number>> {
+  servers ??= fetch('/api/v2/coin-servers').then(r => r.ok ? r.json() as Promise<Record<string, number>> : {}).catch(() => ({}));
+  return servers;
+}
+
+/** This page's address on `coin`, on the port of the server that records it when there is one (same host), else on this server. */
+async function coinAddress(coin: string): Promise<string> {
+  const url = new URL(location.href), port = (await coinServerPorts())[coin];
+  if (port) url.port = String(port);
   if (coin === 'BTC') url.searchParams.delete('coin'); else url.searchParams.set('coin', coin);
-  location.assign(url.href);
+  return url.href;
 }

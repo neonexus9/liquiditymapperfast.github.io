@@ -61,3 +61,17 @@ export function applyServerCoin(coin: Coin, env: NodeJS.ProcessEnv = process.env
 
 /** How much smaller than BTC's the size floors are for this coin (the browser engine uses the same scale). */
 export const coinScale = (coin: Coin): number => scaleOf(coin);
+
+/**
+ * The servers that record each coin, from `HLM_COIN_SERVERS` (`BTC=8787,ETH=8788,…`): one server records one coin, so a page asked for
+ * another coin goes to the port that records it (src/app/coin.ts). Unset, the page stays on its own server.
+ */
+export function coinServers(env: string | undefined = process.env.HLM_COIN_SERVERS): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const item of (env ?? '').split(',')) {
+    const [coin, port] = item.split('=').map(part => part.trim());
+    const n = Number(port);
+    if (coin && /^[A-Z0-9]{1,15}$/i.test(coin) && Number.isInteger(n) && n > 0 && n < 65536) out[coin.toUpperCase()] = n;
+  }
+  return out;
+}
